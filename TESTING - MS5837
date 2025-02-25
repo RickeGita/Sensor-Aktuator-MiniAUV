@@ -1,0 +1,77 @@
+#include <Wire.h>
+#include <MS5837.h>
+#include <ArduinoJson.h>
+
+
+MS5837 sensor;
+
+
+void setup() {
+    Serial.begin(9600);
+    Wire.begin();
+
+
+    if (!sensor.init()) {
+        Serial.println("Sensor MS5837 tidak terdeteksi!");
+        while (1);
+    }
+
+
+    sensor.setModel(MS5837::MS5837_30BA);
+    sensor.setFluidDensity(997); // Air tawar dalam kg/m^3
+}
+
+
+void loop() {
+    sensor.read();
+    StaticJsonDocument<50> jsonDoc;
+    String jsonString;
+
+
+    // Kirim Tekanan
+    jsonDoc["pressure"] = sensor.pressure();
+    serializeJson(jsonDoc, jsonString);
+    if (jsonString.length() > 32) {
+        jsonString = jsonString.substring(0, 32); // Potong agar tidak lebih dari 32 byte
+    }
+    Serial.println(jsonString);
+    delay(200);
+
+
+    // Kirim Suhu
+    jsonDoc.clear();
+    jsonDoc["temperature"] = sensor.temperature();
+    serializeJson(jsonDoc, jsonString);
+    if (jsonString.length() > 32) {
+        jsonString = jsonString.substring(0, 32);
+    }
+    Serial.println(jsonString);
+    delay(200);
+
+
+    // Kirim Kedalaman
+    jsonDoc.clear();
+    jsonDoc["depth"] = sensor.depth();
+    serializeJson(jsonDoc, jsonString);
+    if (jsonString.length() > 32) {
+        jsonString = jsonString.substring(0, 32);
+    }
+    Serial.println(jsonString);
+    delay(200);
+
+
+    // Kirim Ketinggian
+    jsonDoc.clear();
+    jsonDoc["altitude"] = sensor.altitude();
+    serializeJson(jsonDoc, jsonString);
+    if (jsonString.length() > 32) {
+        jsonString = jsonString.substring(0, 32);
+    }
+    Serial.println(jsonString);
+    delay(200);
+
+
+    // Tambahkan pemisah
+    Serial.println("====================");
+    delay(500);
+}
