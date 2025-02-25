@@ -1,0 +1,50 @@
+import smbus2
+import time
+import json
+
+
+I2C_ADDRESS = 8  # Sesuai dengan yang didefinisikan di ESP32
+CHUNK_SIZE = 32  # Sesuai dengan yang digunakan di ESP32
+
+
+def read_i2c_data():
+    bus = smbus2.SMBus(1)  # Menggunakan I2C-1 pada Raspberry Pi
+    received_data = b''  # Buffer untuk menyimpan data JSON
+
+
+    while True:
+        try:
+            # Membaca satu chunk (32 byte)
+            chunk = bus.read_i2c_block_data(I2C_ADDRESS, 0, CHUNK_SIZE)
+            chunk = bytes(chunk).rstrip(b'\x00')  # Hapus byte kosong
+            received_data += chunk
+
+
+            # Cek apakah JSON sudah lengkap (ditandai dengan '}')
+            if b'}' in received_data:
+                json_str = received_data.decode('utf-8')
+                received_data = b''  # Reset buffer
+               
+                # Parse JSON
+                try:
+                    data = json.loads(json_str)
+                    print("Received Data:", data)
+                except json.JSONDecodeError:
+                    print("JSON Error:", json_str)
+
+
+        except Exception as e:
+            print("Error:", e)
+
+
+        time.sleep(1)  # Tunggu sebelum membaca lagi
+
+
+if __name__ == "__main__":
+    read_i2c_data()
+
+
+void loop() {
+    delay(1000);  // Beri jeda antar pembacaan
+    prepareJsonData();  // Perbarui JSON setiap 1 detik
+}
