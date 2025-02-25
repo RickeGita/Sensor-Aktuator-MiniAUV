@@ -1,0 +1,72 @@
+import smbus2
+import json
+import time
+from smbus2 import SMBus, i2c_msg
+
+
+I2C_SLAVE_ADDRESS = 0x08  # Alamat I2C yang digunakan Raspberry Pi
+CHUNK_SIZE = 32           # Ukuran chunk yang dikirim
+JSON_BUFFER_SIZE = 256    # Buffer maksimal untuk JSON
+
+
+# Simulasi data sensor
+def get_sensor_data():
+    data = {
+        "pressure": {
+            "mbar": 1013.25,  # Simulasi tekanan atmosfer
+            "depth": 0.0,     # Simulasi kedalaman
+            "altitude": 0.0   # Simulasi ketinggian
+        },
+        "temp": 25.4,         # Simulasi suhu dalam derajat Celsius
+        "status": "ok"
+    }
+    return json.dumps(data, indent=2) + "\n"  # Tambah '\n' untuk menandakan akhir JSON
+
+
+# Buffer untuk menyimpan JSON yang dikirim ke ESP32
+json_buffer = get_sensor_data()
+json_length = len(json_buffer)
+current_chunk_index = 0
+
+
+def handle_request():
+    global current_chunk_index, json_buffer, json_length
+   
+    if current_chunk_index * CHUNK_SIZE >= json_length:
+        # Perbarui JSON jika sudah terkirim semua
+        json_buffer = get_sensor_data()
+        json_length = len(json_buffer)
+        current_chunk_index = 0
+
+
+    # Ambil chunk yang akan dikirim
+    start = current_chunk_index * CHUNK_SIZE
+    end = start + CHUNK_SIZE
+    chunk = json_buffer[start:end]
+
+
+    # Konversi string ke byte array untuk dikirim via I2C
+    chunk_bytes = bytearray(chunk, 'utf-8')
+
+
+    # Kirim data ke ESP32
+    with SMBus(1) as bus:
+        bus.write_i2c_block_data(I2C_SLAVE_ADDRESS, 0, list(chunk_bytes))
+   
+    current_chunk_index += 1
+
+
+if __name__ == "__main__":
+    print("Raspberry Pi sebagai I2C Slave, menunggu permintaan dari ESP32...")
+   
+    while True:
+        try:
+            handle_request()
+            time.sleep(0.1)  # Simulasi delay untuk memberi waktu ESP32 membaca
+        except Exception as e:
+            print("Error:", e)
+            time.sleep(1)  # Delay sebelum mencoba lagi jika ada error
+
+
+
+
