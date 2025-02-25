@@ -1,0 +1,21 @@
+import smbus
+import time
+
+
+I2C_ADDRESS = 0x08  # Alamat ESP32
+bus = smbus.SMBus(1)
+
+
+def send_joystick_data(x, y, button):
+    try:
+        bus.write_i2c_block_data(I2C_ADDRESS, 0, [x, y, button])
+        print(f"Sent: X={x}, Y={y}, Button={button}")
+    except Exception as e:
+        print("I2C Error:", e)
+while True:
+    # Contoh data joystick (ubah sesuai input nyata)
+    joystick_x = 128  # Nilai tengah (0-255)
+    joystick_y = 200  # Kecepatan maju
+    button_state = 1  # 0: tidak ditekan, 1: naik, 2: turun
+    send_joystick_data(joystick_x, joystick_y, button_state)
+    time.sleep(0.1)  # Kirim setiap 100ms    
